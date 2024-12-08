@@ -3,20 +3,20 @@
 <section>
     <div class="card">
         <div class="card-header">
-            <h4 class="card-title">Formulir Tambah Kepala Grup Pelanggan</h4>
+            <h4 class="card-title">Formulir Tambah Pelanggan</h4>
         </div>
         <div class="card-content">
             <div class="card-body">
-                <form class="form form-vertical">
+                <form class="form form-vertical" method="POST" action="{{route('tambahpelanggan')}}">
+                    @csrf
                     <div class="form-body">
                         <div class="row">
                             <div class="col-12">
-                                
                                 <div class="form-group has-icon-left">
                                     <label for="first-name-icon">Nama Pelanggan</label>
                                     <div class="position-relative">
                                         <input type="text" class="form-control"
-                                            placeholder="Masukan Nama Kepala" id="first-name-icon">
+                                            placeholder="Masukan Nama Kepala" id="first-name-icon" name="name">
                                         <div class="form-control-icon">
                                             <i class="bi bi-person"></i>
                                         </div>
@@ -29,7 +29,7 @@
                                     <label for="email-id-icon">Nik</label>
                                     <div class="position-relative">
                                         <input type="text" class="form-control" placeholder="Masukan NIK"
-                                            id="email-id-icon">
+                                            id="email-id-icon" name='nik'>
                                         <div class="form-control-icon">
                                             <i class="bi bi-envelope"></i>
                                         </div>
@@ -41,7 +41,7 @@
                                     <label for="mobile-id-icon">Alamat</label>
                                     <div class="position-relative">
                                         <input type="text" class="form-control" placeholder="Masukan Alamat"
-                                            id="mobile-id-icon">
+                                            id="mobile-id-icon" name="alamat">
                                         <div class="form-control-icon">
                                             <i class="bi bi-house"></i>
                                         </div>

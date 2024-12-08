@@ -4,17 +4,64 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title">
-                   Tabel Pelanggan 
+                    Tabel Pelanggan
                 </h5>
-                <a href="/gruppelanggan" class="btn btn-primary">Tambah Grup Pelanggan</a>
-                <a href="/petapelanggan" class="btn btn-primary">Pemetaan Pelanggan</a>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <a href="/tambahpelanggan" class="btn btn-primary w-100">Tambah Pelanggan</a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="/petapelanggan" class="btn btn-primary w-100">Pemetaan Pelanggan</a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <button id="load-data" class="btn btn-primary w-100">Tampilkan Data Pelanggan</button>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <button id="generate-senin" class="btn btn-success w-100">Generate Senin</button>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <button id="generate-kamis" class="btn btn-success w-100">Generate Kamis</button>
+                    </div>
+                </div>
             </div>
+            
             <div class="card-body">
-                <div class="table-responsive datatable-minimal">
+                <!-- Notifikasi Sukses atau Error -->
+                @if (session('success'))
+                    <div class="alert alert-success" role="alert">
+                        {{ session('success') }}
+                    </div>
+                @endif
+                @if (session('error'))
+                    <div class="alert alert-danger" role="alert">
+                        {{ session('error') }}
+                    </div>
+                @endif
+                <!-- Form untuk upload file Excel -->
+                <form action="{{ route('import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="input-group">
+                        <input type="file" name="file" class="form-control" required>
+                        <button type="submit" class="btn btn-success">Import Excel</button>
+                    </div>
+                </form>
+                <div class="row mb-5 mt-2">
+                    <div class="col-md-4">
+                        <label for="filter-hari">Filter Hari:</label>
+                        <select id="filter-hari" class="form-select">
+                            <option value="">Semua Hari</option>
+                            <option value="Senin">Senin</option>
+                            <option value="Kamis">Kamis</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-responsive datatable-minimal mt-4">
                     <table class="table" id="table2">
                         <thead>
                             <tr>
                                 <th>No</th>
+                                <th>Hari</th>
                                 <th>Grup</th>
                                 <th>Nama</th>
                                 <th>NIK</th>
@@ -22,23 +69,100 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Bayu</td>
-                                <td>Haris</td>
-                                <td>076 4820 8838</td>
-                                <td>1</td>
-                                <td>
-                                    <a href="/petapelanggan" class="btn btn-primary">Edit</a>
-                                    <a href="#" class="btn btn-danger">Delete</a>
-                                </td>
-                            </tr>
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
-            </div>
+            </div>            
         </div>
-
     </section>
-@endsection
+    <script>
+        $(document).ready(function () {
+            // Function to initialize or reinitialize DataTable
+            function initializeDataTable(filterDay = '') {
+                // Destroy existing DataTable if it exists
+                if ($.fn.DataTable.isDataTable('#table2')) {
+                    $('#table2').DataTable().destroy();
+                }
+            
+                // Clear the table body to remove any existing rows
+                $('#table2 tbody').empty();
+            
+                // Reinitialize DataTable
+                $('#table2').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: '{{ route('searcPelanggan') }}', // Ensure the route matches your server-side logic
+                        type: 'GET',
+                        data: {
+                            filter_hari: filterDay // Send filter day as an additional parameter
+                        },
+                        dataType: 'json',
+                        error: function (xhr, error, thrown) {
+                            console.error('DataTables Ajax Error:', {
+                                xhr: xhr,
+                                error: error,
+                                thrown: thrown
+                            });
+                            alert('Failed to load data. Please try again later.');
+                        }
+                    },
+                    columns: [
+                        { data: 'no', name: 'no', orderable: false },
+                        { data: 'hari', name: 'hari' },
+                        { data: 'grup', name: 'grupPembeli.kepala.name' },
+                        { data: 'name', name: 'name' },
+                        { data: 'nik', name: 'nik' },
+                        { data: 'jumlah_beli_tabung', name: 'jumlah_beli_tabung', orderable: false },
+                        {
+                            data: 'aksi',
+                            name: 'aksi',
+                            orderable: false,
+                            searchable: false,
+                            render: function (data, type, row) {
+                                return data;
+                            }
+                        }
+                    ],
+                    order: [[1, 'asc']],
+                    pageLength: 40
+                });
+            }
+        
+            // Button click event to load DataTable
+            $('#load-data').on('click', function () {
+                initializeDataTable();
+            });
+        
+            // Filter by day (Senin or Kamis)
+            $('#filter-hari').on('change', function () {
+                const selectedDay = $(this).val(); // Get the selected day
+                initializeDataTable(selectedDay); // Reload DataTable with filter
+            });
+        
+            $('#generate-senin, #generate-kamis').on('click', function () {
+                const hari = $(this).attr('id') === 'generate-senin' ? 'Senin' : 'Kamis';
+                console.log('Button Clicked, Hari:', hari);
+            
+                $.ajax({
+                    url: `/update-hari/${hari}`, // URL ke server untuk update hari
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}', // Token CSRF untuk keamanan
+                        hari: hari // Mengirimkan parameter hari ke server
+                    },
+                    success: function (response) {
+                        alert(response.message); // Menampilkan pesan sukses
+                        initializeDataTable(); // Reload DataTable dengan data yang baru
+                    },
+                    error: function (xhr) {
+                        console.error('Ajax Error:', xhr);
+                        alert('Failed to update data. Please try again.');
+                    }
+                });
+            });
+            // Initialize the DataTable when the page loads
+            initializeDataTable();
+            });
+    </script> 
+@endsection     

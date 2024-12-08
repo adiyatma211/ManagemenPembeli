@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class pagesController extends Controller
@@ -16,15 +17,142 @@ class pagesController extends Controller
 
     // Pelanggan
     public function pelangandash(){
-        return view('ManagmenPelanggan.c_pelanggan');
+
+        $showPelanggan = User::all();
+       
+        return view('ManagmenPelanggan.c_pelanggan', compact('showPelanggan'));
     }
+    public function searcPelanggan(Request $request)
+{
+    // Base query with relationships
+    $query = User::with('grupPembeli.kepala');
+
+    // Total records before filtering
+    $recordsTotal = User::count();
+
+    // Apply search filter
+    if ($request->input('search.value')) {
+        $search = $request->input('search.value');
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'LIKE', "%{$search}%")
+              ->orWhere('nik', 'LIKE', "%{$search}%");
+        });
+    }
+
+    // Apply day filter if present
+    if ($request->input('filter_hari')) {
+        $filterHari = $request->input('filter_hari');
+        $query->where('hari', $filterHari);
+    }
+
+    // Count filtered records
+    $recordsFiltered = clone $query;
+    $recordsFiltered = $recordsFiltered->count();
+
+    // Sorting
+    $columns = ['name', 'nik', 'grupPembeli.kepala.name'];
+    $order = $request->input('order.0.column', 0);
+    $dir = $request->input('order.0.dir', 'asc');
+
+    if (isset($columns[$order])) {
+        $orderColumn = $columns[$order];
+
+        // Handle nested sorting
+        if (strpos($orderColumn, '.') !== false) {
+            $relations = explode('.', $orderColumn);
+            $finalColumn = array_pop($relations);
+
+            foreach ($relations as $relation) {
+                $query->whereHas($relation);
+            }
+
+            $query->orderBy(function ($q) use ($relations, $finalColumn) {
+                $subQuery = $q;
+                foreach ($relations as $relation) {
+                    $subQuery = $subQuery->{$relation};
+                }
+                return $subQuery->pluck($finalColumn);
+            }, $dir);
+        } else {
+            $query->orderBy($orderColumn, $dir);
+        }
+    }
+
+    // Pagination
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 10);
+
+    // Retrieve data
+    $data = $query->skip($start)->take($length)->get()->map(function ($row, $index) use ($start) {
+        return [
+            'no' => $start + $index + 1,
+            'hari' => $row->hari ?? 'Belum Di Pilih Hari',
+            'grup' => $row->grupPembeli->kepala->name ?? 'Tidak ada grup',
+            'name' => $row->name,
+            'nik' => $row->nik,
+            'jumlah_beli_tabung' => $row->jumlah_beli_tabung ?? 'Belum ada data',
+            'aksi' => "
+                <a href='/editpelanggan/{$row->id}' class='btn btn-primary btn-sm'>Edit</a>
+                <a href='/deletepelanggan/{$row->id}' class='btn btn-danger btn-sm'>Delete</a>
+            "
+        ];
+    });
+
+    // Return JSON response
+    return response()->json([
+        'draw' => $request->input('draw', 1),
+        'recordsTotal' => $recordsTotal,
+        'recordsFiltered' => $recordsFiltered,
+        'data' => $data
+    ]);
+}
+
+
+
+
+    public function getPelanggan(Request $request)
+    {
+        $term = $request->input('term');
+        $pelanggan = User::where('name', 'LIKE', '%' . $term . '%')
+                         ->select('id', 'name as label')
+                         ->get()
+                         ->toArray();
+        return response()->json($pelanggan);
+    }
+
+    public function getAllPelanggan()
+    {
+        $allPelanggan = User::select('id', 'name as text')->get()->toArray();
+        return response()->json($allPelanggan);
+    }
+
 
     public function tambahgruppelanggan(){
+        
         return view('ManagmenPelanggan.c_grup_pelanggan');
     }
+    public function search(Request $request)
+    {
+        $search = $request->get('search', '');
+
+        $kepalas = User::query()
+            ->where('name', 'LIKE', "%{$search}%")
+            ->whereNull('grupPelanggan') // Filter kepala yang belum memiliki grupPelanggan
+            ->take(40)
+            ->get();
+
+        return response()->json($kepalas);
+    }
+
 
     public function pemetaanpelanggan(){
+        
         return view('ManagmenPelanggan.c_peta_pelanggan');
     }
+
+    public function tambahpelanggan(){
+        return view('ManagmenPelanggan.c_tambah_pelanggan');
+    }
+    
 
 }
