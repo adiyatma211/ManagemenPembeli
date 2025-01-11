@@ -23,3 +23,5 @@ Route::post('/simpanpelanggan', [PelangganController::class, 'store'])->name('ta
 Route::post('/simpankepalagrup', [PelangganController::class, 'storeKepalaGrup'])->name('simpankepalagrup');
 Route::post('/importexcel', [PelangganController::class, 'import'])->name('import');
 Route::post('/update-hari/{hari}', [PelangganController::class, 'updateHari'])->name('updateHari');
+Route::post('/reset-hari', [PelangganController::class, 'resethari'])->name('resethari');
+

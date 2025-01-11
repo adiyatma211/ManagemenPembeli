@@ -18,12 +18,19 @@ class GrupPelanggan extends Model
     
     public function kepala()
     {
-        return $this->belongsTo(User::class, 'KepalaPelangganID'); // Group head
+        return $this->belongsTo(User::class, 'KepalaPelangganID');
     }
 
     public function anggota()
     {
-        return $this->belongsToMany(User::class, 'users', 'id', 'id')
-                    ->whereIn('id', explode(',', $this->NamaPelangganID)); // Split the string back into an array
+        $ids = explode(',', $this->NamaPelangganID); // Ubah string menjadi array
+        return User::whereIn('id', $ids); // Ambil anggota berdasarkan ID
     }
+
+    public function cariAnggota($userId)
+    {
+        $ids = explode(',', $this->NamaPelangganID);
+        return in_array((string)$userId, $ids);
+    }
+    
 }

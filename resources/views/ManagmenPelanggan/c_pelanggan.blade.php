@@ -17,10 +17,13 @@
                         <button id="load-data" class="btn btn-primary w-100">Tampilkan Data Pelanggan</button>
                     </div>
                     <div class="col-md-4 mb-2">
-                        <button id="generate-senin" class="btn btn-success w-100">Generate Senin</button>
+                        <button id="generate-senin" class="btn btn-success w-100">Buat Senin</button>
                     </div>
                     <div class="col-md-4 mb-2">
-                        <button id="generate-kamis" class="btn btn-success w-100">Generate Kamis</button>
+                        <button id="generate-kamis" class="btn btn-success w-100">Buat Kamis</button>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <button id="reset-hari" class="btn btn-success w-100">Reset SENIN DAN KAMIS!</button>
                     </div>
                 </div>
             </div>
@@ -66,7 +69,7 @@
                                 <th>Nama</th>
                                 <th>NIK</th>
                                 <th>Jumlah Beli Tabung</th>
-                                <th>Aksi</th>
+                                {{-- <th>Aksi</th> --}}
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -75,7 +78,7 @@
             </div>            
         </div>
     </section>
-    <script>
+    {{-- <script>
         $(document).ready(function () {
             // Function to initialize or reinitialize DataTable
             function initializeDataTable(filterDay = '') {
@@ -114,15 +117,7 @@
                         { data: 'name', name: 'name' },
                         { data: 'nik', name: 'nik' },
                         { data: 'jumlah_beli_tabung', name: 'jumlah_beli_tabung', orderable: false },
-                        {
-                            data: 'aksi',
-                            name: 'aksi',
-                            orderable: false,
-                            searchable: false,
-                            render: function (data, type, row) {
-                                return data;
-                            }
-                        }
+                       
                     ],
                     order: [[1, 'asc']],
                     pageLength: 40
@@ -164,5 +159,128 @@
             // Initialize the DataTable when the page loads
             initializeDataTable();
             });
-    </script> 
-@endsection     
+    </script>  --}}
+    <script>
+        $(document).ready(function () {
+            // Function to initialize or reinitialize DataTable
+            function initializeDataTable(filterDay = '') {
+                // Destroy existing DataTable if it exists
+                if ($.fn.DataTable.isDataTable('#table2')) {
+                    $('#table2').DataTable().destroy();
+                }
+                // Clear the table body to remove any existing rows
+                $('#table2 tbody').empty();
+            
+                // Reinitialize DataTable
+                $('#table2').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: '{{ route('searcPelanggan') }}', // Ensure the route matches your server-side logic
+                        type: 'GET',
+                        data: {
+                            filter_hari: filterDay // Send filter day as an additional parameter
+                        },
+                        dataType: 'json',
+                        error: function (xhr, error, thrown) {
+                            console.error('DataTables Ajax Error:', {
+                                xhr: xhr,
+                                error: error,
+                                thrown: thrown
+                            });
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Failed to load data. Please try again later.'
+                            });
+                        }
+                    },
+                    columns: [
+                        { data: 'no', name: 'no', orderable: false },
+                        { data: 'hari', name: 'hari' },
+                        { data: 'grup', name: 'grupPembeli.kepala.name' },
+                        { data: 'name', name: 'name' },
+                        { data: 'nik', name: 'nik' },
+                        { data: 'jumlah_beli_tabung', name: 'jumlah_beli_tabung', orderable: false },
+                    ],
+                    order: [[1, 'asc']],
+                    pageLength: 40
+                });
+            }
+        
+            // Button click event to load DataTable
+            $('#load-data').on('click', function () {
+                initializeDataTable();
+            });
+        
+            // Filter by day (Senin or Kamis)
+            $('#filter-hari').on('change', function () {
+                const selectedDay = $(this).val(); // Get the selected day
+                initializeDataTable(selectedDay); // Reload DataTable with filter
+            });
+        
+            // Generate buttons for Senin or Kamis
+            $('#generate-senin, #generate-kamis').on('click', function () {
+                const hari = $(this).attr('id') === 'generate-senin' ? 'Senin' : 'Kamis';
+                console.log('Button Clicked, Hari:', hari);
+            
+                $.ajax({
+                    url: `/update-hari/${hari}`, // URL ke server untuk update hari
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}', // Token CSRF untuk keamanan
+                        hari: hari // Mengirimkan parameter hari ke server
+                    },
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message
+                        });
+                        initializeDataTable(); // Reload DataTable dengan data yang baru
+                    },
+                    error: function (xhr) {
+                        console.error('Ajax Error:', xhr);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to update data. Please try again.'
+                        });
+                    }
+                });
+            });
+        
+            // Reset hari button
+            $('#reset-hari').on('click', function () {
+                console.log('Reset Hari Button Clicked');
+            
+                $.ajax({
+                    url: '/reset-hari', // URL ke server untuk reset hari
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}' // Token CSRF untuk keamanan
+                    },
+                    success: function (response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message
+                        });
+                        initializeDataTable(); // Reload DataTable dengan data yang baru
+                    },
+                    error: function (xhr) {
+                        console.error('Ajax Error:', xhr);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to reset data. Please try again.'
+                        });
+                    }
+                });
+            });
+        
+            // Initialize the DataTable when the page loads
+            initializeDataTable();
+        });    
+            </script>
+        @endsection                     

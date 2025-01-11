@@ -41,8 +41,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    public function grupPembeli()
+    public function grupPelanggan()
     {
-        return $this->belongsTo(GrupPelanggan::class, 'grupPelanggan', 'KepalaPelangganID');
+        return $this->hasOne(GrupPelanggan::class, 'KepalaPelangganID', 'id');
     }
+
 }

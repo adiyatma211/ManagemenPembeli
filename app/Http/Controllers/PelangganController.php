@@ -101,149 +101,91 @@ class PelangganController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-    }
-
-
-    // public function updateHari(Request $request, $hari)
-    // {
-    //     $request->validate([
-    //         'hari' => 'required|in:Senin,Kamis',
-    //     ]);
-        
-    //     // Log untuk melihat parameter yang diterima
-    //     Log::info('Received parameter hari:', ['hari' => $hari]);
-    //     Log::info('Received AJAX data:', $request->all());
-    
-    //     // Aktifkan query log
-    //     DB::enableQueryLog();
-    
-    //     // Validasi parameter hari
-    //     if (!in_array($hari, ['Senin', 'Kamis'])) {
-    //         return response()->json([
-    //             'message' => 'Hari tidak valid.'
-    //         ], 400);
-    //     }
-    
-    //     $currentWeekStart = Carbon::now()->startOfWeek();
-    //     $currentWeekEnd = Carbon::now()->endOfWeek();
-    
-    //     // Debugging: Cek kondisi yang digunakan
-    //     Log::info('Update Hari Method Debug', [
-    //         'hari' => $hari,
-    //         'week_start' => $currentWeekStart,
-    //         'week_end' => $currentWeekEnd
-    //     ]);
-    
-    //     // Ambil user yang belum punya grup dan hari NULL
-    //     $usersWithoutGroup = User::whereNull('grupPelanggan')
-    //         ->whereNull('hari')  // Hanya yang hari-nya NULL
-    //         ->inRandomOrder()    // Acak
-    //         ->take(20)           // Ambil 20 user
-    //         ->get();
-    
-    //     // Ambil user yang sudah punya grup
-    //     $usersWithGroup = User::whereNotNull('grupPelanggan')
-    //         ->whereNull('hari')  // Hanya yang hari-nya NULL
-    //         ->inRandomOrder()    // Acak
-    //         ->take(20)           // Ambil 20 user
-    //         ->get();
-    
-    //     // Gabungkan kedua koleksi user
-    //     $usersToUpdate = $usersWithoutGroup->merge($usersWithGroup);
-    
-    //     // Update hari dan waktu
-    //     foreach ($usersToUpdate as $user) {
-    //         $user->hari = $hari;
-    //         $user->updated_at = Carbon::now();
-    //         $user->updated_by = NULL;
-    //         $user->created_by = NULL;
-    
-    //         $isSaved = $user->save();
-    
-    //         // Cek apakah berhasil disimpan
-    //         if (!$isSaved) {
-    //             Log::error('Failed to update user', ['id' => $user->id]);
-    //             return response()->json([
-    //                 'message' => 'Terjadi kesalahan saat memperbarui user.',
-    //                 'status' => 'error'
-    //             ]);
-    //         }
-    //     }
-    
-    //     // Reset pada hari Minggu untuk semua user
-    //     if (Carbon::now()->isSunday()) {
-    //         User::query()->update(['hari' => NULL]); // Reset semua user
-    //         Log::info('All users reset on Sunday');
-    //     }
-    
-    //     // Lihat query yang dijalankan
-    //     $queries = DB::getQueryLog();
-    //     dd($queries); // Hentikan eksekusi untuk melihat query
-    
-    //     return response()->json([
-    //         'message' => "Hari {$hari} berhasil di-generate",
-    //         'updated_users' => $usersToUpdate->pluck('id')
-        //     ]);
-        // }    
+    } 
         public function updateHari(Request $request)
-{
-    $hari = $request->get('hari', 'Senin'); // Default hari adalah Senin
+        {
+            $hari = $request->get('hari', 'Senin'); // Default hari adalah Senin
 
-    // Validasi input hari
-    if (!in_array($hari, ['Senin', 'Kamis'])) {
-        return response()->json(['message' => 'Hari tidak valid.'], 400);
-    }
-
-    try {
-        DB::beginTransaction();
-
-        // Pilih user tanpa grupPelanggan
-        $usersWithoutGroup = User::whereNull('grupPelanggan')
-            ->whereNull('hari') // Hanya user yang belum di-update
-            ->inRandomOrder()
-            ->take(20) // Batasi jumlah user yang diambil
-            ->get();
-
-            foreach ($usersWithoutGroup as $user) {
-                $affectedRows = DB::table('users')
-                    ->where('id', $user->id)
-                    ->update(['hari' => $hari, 'updated_at' => now()]);
-                Log::info("Update user tanpa grupPelanggan ID {$user->id} dengan Query Builder:", ['affectedRows' => $affectedRows]);
+            // Validasi input hari
+            if (!in_array($hari, ['Senin', 'Kamis'])) {
+                return response()->json(['message' => 'Hari tidak valid.'], 400);
             }
-            
 
-        Log::info('User tanpa grupPelanggan yang di-update:', ['ids' => $usersWithoutGroup->pluck('id')]);
+            try {
+                DB::beginTransaction();
 
-        // Pilih user dengan grupPelanggan
-        $usersWithGroup = User::whereNotNull('grupPelanggan')
-            ->whereNull('hari') // Hanya user yang belum di-update
-            ->inRandomOrder()
-            ->take(8) // Batasi jumlah user yang diambil
-            ->get();
+                // Pilih user tanpa grupPelanggan
+                $usersWithoutGroup = User::whereNull('grupPelanggan')
+                    ->whereNull('hari') // Hanya user yang belum di-update
+                    ->inRandomOrder()
+                    ->take(10) // Batasi jumlah user yang diambil
+                    ->get();
 
-            foreach ($usersWithGroup as $user) {
-                $affectedRows = DB::table('users')
-                    ->where('id', $user->id)
-                    ->update(['hari' => $hari, 'updated_at' => now()]);
-                Log::info("Update user dengan grupPelanggan ID {$user->id} dengan Query Builder:", ['affectedRows' => $affectedRows]);
-            }            
+                    foreach ($usersWithoutGroup as $user) {
+                        $affectedRows = DB::table('users')
+                            ->where('id', $user->id)
+                            ->update(['hari' => $hari, 'updated_at' => now()]);
+                        Log::info("Update user tanpa grupPelanggan ID {$user->id} dengan Query Builder:", ['affectedRows' => $affectedRows]);
+                    }
 
-        Log::info('User dengan grupPelanggan yang di-update:', ['ids' => $usersWithGroup->pluck('id')]);
 
-        DB::commit();
+                Log::info('User tanpa grupPelanggan yang di-update:', ['ids' => $usersWithoutGroup->pluck('id')]);
 
-        return response()->json([
-            'message' => "Hari {$hari} berhasil di-update untuk user terpilih.",
-            'usersWithoutGroup' => $usersWithoutGroup->pluck('id'),
-            'usersWithGroup' => $usersWithGroup->pluck('id'),
-        ]);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Terjadi kesalahan saat update hari:', ['error' => $e->getMessage()]);
-        return response()->json([
-            'message' => 'Terjadi kesalahan saat update hari.',
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-}
+                // Pilih user dengan grupPelanggan
+                $usersWithGroup = User::whereNotNull('grupPelanggan')
+                    ->whereNull('hari') // Hanya user yang belum di-update
+                    ->inRandomOrder()
+                    ->take(30) // Batasi jumlah user yang diambil
+                    ->get();
+
+                    foreach ($usersWithGroup as $user) {
+                        $affectedRows = DB::table('users')
+                            ->where('id', $user->id)
+                            ->update(['hari' => $hari, 'updated_at' => now()]);
+                        Log::info("Update user dengan grupPelanggan ID {$user->id} dengan Query Builder:", ['affectedRows' => $affectedRows]);
+                    }            
+
+                Log::info('User dengan grupPelanggan yang di-update:', ['ids' => $usersWithGroup->pluck('id')]);
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => "Hari {$hari} berhasil di-update untuk user terpilih.",
+                    'usersWithoutGroup' => $usersWithoutGroup->pluck('id'),
+                    'usersWithGroup' => $usersWithGroup->pluck('id'),
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Terjadi kesalahan saat update hari:', ['error' => $e->getMessage()]);
+                return response()->json([
+                    'message' => 'Terjadi kesalahan saat update hari.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        }
+        
+
+        public function resetHari(Request $request)
+        {
+            try {
+                // Validasi CSRF token
+                $request->validate([
+                    '_token' => 'required',
+                ]);
+    
+                // Update kolom 'hari' menjadi NULL di tabel 'users' (atau tabel lain yang sesuai)
+                DB::table('users')->update(['hari' => null]);
+    
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Hari berhasil direset menjadi NULL.',
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan saat mereset hari.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        }
 }

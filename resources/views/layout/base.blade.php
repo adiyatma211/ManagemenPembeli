@@ -240,6 +240,7 @@
  
     <script src="{{asset('base/assets/extensions/datatables.net/js/jquery.dataTables.min.js')}}"></script>
     <script src="{{asset('base/assets/extensions/datatables.net-bs5/js/dataTables.bootstrap5.min.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{{asset('base/assets/static/js/pages/datatables.js')}}"></script>
     <script src="{{asset('fungsi/select2/js/select2.min.js')}}"></script>
     <script src="{{asset('base/assets/static/js/components/dark.js')}}"></script>
