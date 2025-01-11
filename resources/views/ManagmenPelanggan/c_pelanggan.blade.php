@@ -200,7 +200,18 @@
                         { data: 'hari', name: 'hari' },
                         { data: 'grup', name: 'grupPembeli.kepala.name' },
                         { data: 'name', name: 'name' },
-                        { data: 'nik', name: 'nik' },
+                        { 
+                            data: 'nik', 
+                            name: 'nik',
+                            render: function(data, type, row) {
+                                return `
+                                    <span>${data}</span>
+                                    <button class="btn btn-sm btn-outline-secondary copy-nik" data-nik="${data}" title="Copy">
+                                        <i class="fa fa-copy"></i>
+                                    </button>
+                                `;
+                            }
+                        },
                         { data: 'jumlah_beli_tabung', name: 'jumlah_beli_tabung', orderable: false },
                     ],
                     order: [[1, 'asc']],
@@ -281,6 +292,27 @@
         
             // Initialize the DataTable when the page loads
             initializeDataTable();
-        });    
-            </script>
-        @endsection                     
+        });  
+        $(document).on('click', '.copy-nik', function() {
+            const nik = $(this).data('nik');
+            navigator.clipboard.writeText(nik).then(() => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'NIK berhasil disalin: ' + nik,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }).catch(err => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: 'Gagal menyalin NIK',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                console.error(err);
+            });
+        });            
+</script>
+@endsection                     
