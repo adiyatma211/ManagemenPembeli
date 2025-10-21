@@ -73,7 +73,8 @@ class PelangganController extends Controller
                 // Set the KepalaPelangganID
                 $user->grupPelanggan = $validated['KepalaPelangganID']; // Assuming there's a column for KepalaPelangganID
                 $user->save(); // Save the user record
-            }
+        }
+
         }
     
         return response()->json(['message' => 'Kepala Grup berhasil disimpan'], 201);
@@ -175,17 +176,42 @@ class PelangganController extends Controller
     
                 // Update kolom 'hari' menjadi NULL di tabel 'users' (atau tabel lain yang sesuai)
                 DB::table('users')->update(['hari' => null]);
+
+                // Hapus semua log copy NIK
+                DB::table('nik_copy_logs')->delete();
     
                 return response()->json([
                     'success' => true,
-                    'message' => 'Hari berhasil direset menjadi NULL.',
+                    'message' => 'Hari berhasil direset dan log copy dibersihkan.',
                 ], 200);
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan saat mereset hari.',
+                    'message' => 'Terjadi kesalahan saat mereset hari atau log copy.',
                     'error' => $e->getMessage(),
                 ], 500);
             }
         }
+
+    public function nikCopied(Request $request)
+    {
+        $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'nik' => 'required|string',
+        ]);
+
+        try {
+            DB::table('nik_copy_logs')->insert([
+                'user_id' => $validated['user_id'] ?? null,
+                'nik' => $validated['nik'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }
+

@@ -102,7 +102,7 @@
             </li>
             
             <li
-                class="sidebar-item  has-sub">
+                class="sidebar-item  has-sub {{ request()->is('tambahpelanggan') || request()->is('pelanggan') || request()->is('petapelanggan') || request()->is('gruppelanggan') ? 'active' : '' }}">
                 <a href="#" class='sidebar-link'>
                     <i class="bi bi-stack"></i>
                     <span>Managemen Pelanggan</span>
@@ -110,8 +110,8 @@
                 
                 <ul class="submenu ">
                     
-                    <li class="submenu-item  ">
-                        <a href="/pelanggan" class="submenu-link">Tambah Pelanggan</a>
+                    <li class="submenu-item {{ request()->is('tambahpelanggan') ? 'active' : '' }}">
+                        <a href="/tambahpelanggan" class="submenu-link">Tambah Pelanggan</a>
                         
                     </li>
                     

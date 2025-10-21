@@ -7,12 +7,12 @@
                     Tabel Pelanggan
                 </h5>
                 <div class="row">
-                    <div class="col-md-4 mb-2">
+                    {{-- <div class="col-md-4 mb-2">
                         <a href="/tambahpelanggan" class="btn btn-primary w-100">Tambah Pelanggan</a>
                     </div>
                     <div class="col-md-4 mb-2">
                         <a href="/petapelanggan" class="btn btn-primary w-100">Pemetaan Pelanggan</a>
-                    </div>
+                    </div> --}}
                     <div class="col-md-4 mb-2">
                         <button id="load-data" class="btn btn-primary w-100">Tampilkan Data Pelanggan</button>
                     </div>
@@ -41,13 +41,13 @@
                     </div>
                 @endif
                 <!-- Form untuk upload file Excel -->
-                <form action="{{ route('import') }}" method="POST" enctype="multipart/form-data">
+                {{-- <form action="{{ route('import') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="input-group">
                         <input type="file" name="file" class="form-control" required>
                         <button type="submit" class="btn btn-success">Import Excel</button>
                     </div>
-                </form>
+                </form> --}}
                 <div class="row mb-5 mt-2">
                     <div class="col-md-4">
                         <label for="filter-hari">Filter Hari:</label>
@@ -216,10 +216,11 @@
                             data: 'nik',
                             name: 'nik',
                             render: function(data, type, row) {
+                                const copiedClass = row.copied ? 'text-success' : '';
                                 return `
                                     <span>${data}</span>
-                                    <button class="btn btn-sm btn-outline-secondary copy-nik" data-nik="${data}" title="Copy">
-                                        <i class="fa fa-copy"></i>
+                                    <button class="btn btn-sm btn-outline-secondary copy-nik" data-nik="${data}" data-user-id="${row.id || ''}" title="Copy">
+                                        <i class="fa fa-copy ${copiedClass}"></i>
                                     </button>
                                 `;
                             }
@@ -295,6 +296,8 @@
                             title: 'Success',
                             text: response.message
                         });
+                        // Reset status tombol copy (hapus warna hijau pada ikon)
+                        $('.copy-nik i').removeClass('text-success');
                         initializeDataTable(); // Reload DataTable dengan data yang baru
                     },
                     error: function(xhr) {
@@ -312,12 +315,13 @@
             initializeDataTable();
         });
 
-        $(document).on('click', '.copy-nik', function() {
-            const $icon = $(this).find('i'); // Mengambil elemen ikon dalam tombol
-            const nik = $(this).data('nik');
+        $(document).on('click', '.copy-nik', function(event) {
+            const $btn = $(this);
+            const $icon = $btn.find('i');
+            const nik = $btn.data('nik');
+            const userId = $btn.data('user-id') || null;
 
             navigator.clipboard.writeText(nik).then(() => {
-                // Menampilkan pesan berhasil
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
@@ -326,11 +330,22 @@
                     showConfirmButton: false
                 });
 
-                // Mengubah warna ikon menjadi hijau
-                $icon.removeClass('text-default').addClass(
-                'text-success'); // Pastikan 'text-success' adalah kelas CSS hijau
+                // Ubah warna ikon menjadi hijau
+                $icon.removeClass('text-default').addClass('text-success');
+
+                // Simpan log copy ke DB (non-blocking)
+                $.ajax({
+                    url: '/nik-copied',
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        user_id: userId,
+                        nik: nik
+                    }
+                }).fail(function(xhr){
+                    console.error('Gagal menyimpan log copy', xhr);
+                });
             }).catch(err => {
-                // Menampilkan pesan gagal
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
@@ -338,7 +353,6 @@
                     timer: 2000,
                     showConfirmButton: false
                 });
-
                 console.error(err);
             });
         });

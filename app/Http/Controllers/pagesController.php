@@ -202,6 +202,16 @@ class pagesController extends Controller
             $join->on('users.grupPelanggan', '=', 'grup_pelanggans.KepalaPelangganID')
                 ->orWhereRaw('FIND_IN_SET(users.id, grup_pelanggans.NamaPelangganID)');
         })
+        // Join status copy terakhir per user
+        ->leftJoinSub(
+            DB::table('nik_copy_logs')
+                ->select('user_id', DB::raw('MAX(created_at) as copied_at'))
+                ->groupBy('user_id'),
+            'copy_logs',
+            function ($join) {
+                $join->on('users.id', '=', 'copy_logs.user_id');
+            }
+        )
         ->select(
             'users.id',
             'users.name as nama_pelanggan',
@@ -210,8 +220,21 @@ class pagesController extends Controller
             'grup_pelanggans.KepalaPelangganID',
             'grup_pelanggans.NamaPelangganID',
             'grup_pelanggans.id as grup_id',
-            DB::raw('(SELECT name FROM users WHERE users.id = grup_pelanggans.KepalaPelangganID) as grup_name')
-        );
+            DB::raw('(SELECT name FROM users WHERE users.id = grup_pelanggans.KepalaPelangganID) as grup_name'),
+            DB::raw('copy_logs.copied_at as copied_at')
+        )
+        // Sembunyikan baris tanpa NIK
+        ->whereNotNull('users.nik')
+        ->where('users.nik', '<>', '')
+        // Sembunyikan NIK yang duplikat (hanya tampilkan NIK yang muncul sekali)
+        ->whereIn('users.nik', function($q){
+            $q->select('nik')
+              ->from('users')
+              ->whereNotNull('nik')
+              ->where('nik','<>','')
+              ->groupBy('nik')
+              ->havingRaw('COUNT(*) = 1');
+        });
     
         // Filter berdasarkan pencarian
         if (!empty($searchValue)) {
@@ -226,8 +249,18 @@ class pagesController extends Controller
             $query->where('users.hari', $filterHari);
         }
     
-        // Hitung total records tanpa filter
-        $recordsTotal = User::count();
+        // Hitung total records tanpa filter (khusus yang punya NIK unik)
+        $recordsTotal = User::whereNotNull('nik')
+            ->where('nik', '<>', '')
+            ->whereIn('nik', function($q){
+                $q->select('nik')
+                  ->from('users')
+                  ->whereNotNull('nik')
+                  ->where('nik','<>','')
+                  ->groupBy('nik')
+                  ->havingRaw('COUNT(*) = 1');
+            })
+            ->count();
     
         // Hitung total records dengan filter
         $recordsFiltered = $query->count();
@@ -255,8 +288,11 @@ class pagesController extends Controller
                 $grupName = $row->grup_name ?? 'Tidak ada grup';
             }
     
-            return [
+                        return [
                 'no' => $start + $index + 1,
+                'copied' => !empty($row->copied_at),
+                'copied_at' => $row->copied_at,
+                'id' => $row->id,
                 'hari' => $row->hari ?? 'Belum Dipilih Hari',
                 'grup' => $grupName,
                 'name' => $row->nama_pelanggan,
@@ -319,6 +355,7 @@ class pagesController extends Controller
 
         return response()->json($kepalas);
     }
+
 
 
     public function pemetaanpelanggan(){

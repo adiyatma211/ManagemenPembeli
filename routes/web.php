@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\pagesController;
@@ -7,8 +7,10 @@ use App\Http\Controllers\PelangganController;
 // Route::get('/', [pagesController::class, 'base'])->name('base');
 
 
-// Route Dashboard
-Route::get('/', [pagesController::class, 'dashboard'])->name('dashboard');
+// Default route redirects to Pelanggan (list)
+Route::get('/', function () {
+    return redirect('/pelanggan');
+});
 
 // Route Pelanggan
 Route::get('/pelanggan', [pagesController::class, 'pelangandash'])->name('pelanggan');
@@ -24,4 +26,6 @@ Route::post('/simpankepalagrup', [PelangganController::class, 'storeKepalaGrup']
 Route::post('/importexcel', [PelangganController::class, 'import'])->name('import');
 Route::post('/update-hari/{hari}', [PelangganController::class, 'updateHari'])->name('updateHari');
 Route::post('/reset-hari', [PelangganController::class, 'resethari'])->name('resethari');
+Route::post('/nik-copied', [PelangganController::class, 'nikCopied'])->name('nik.copied');
+
 
